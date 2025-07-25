@@ -1,7 +1,7 @@
 import { createClient, RedisClientType } from "redis";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
-const TTL_SECONDS = 30 * 60; // 30 minutes
+const TTL_SECONDS = Number(process.env.CACHE_TTL_SECONDS) || 1800; // 30 minutes
 
 export interface WeatherCacheData {
     city: string;
@@ -17,7 +17,6 @@ export class CacheService {
     constructor() {
         this.redisClient = createClient({ url: REDIS_URL });
 
-        // Handle connection events
         this.redisClient.on("error", err => {
             console.error("Redis connection error:", err);
             this.isConnected = false;
