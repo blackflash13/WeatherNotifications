@@ -1,0 +1,37 @@
+{
+  "name": "weather-notification-monorepo",
+  "version": "1.0.0",
+  "description": "Weather notification system monorepo",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "weather-fetcher",
+    "weather-scheduler", 
+    "notification-senders-services",
+    "shared-types"
+  ],
+  "scripts": {
+    "lint": "eslint */src/**/*.ts",
+    "lint:fix": "eslint */src/**/*.ts --fix",
+    "format": "prettier --write */src/**/*.ts",
+    "format:check": "prettier --check */src/**/*.ts",
+    "build:all": "npm run build --workspaces",
+    "dev:weather-fetcher": "npm run dev --workspace=weather-fetcher",
+    "dev:weather-scheduler": "npm run dev --workspace=weather-scheduler",
+    "test:all": "npm run test --workspaces"
+  },
+  "devDependencies": {
+    "@types/eslint": "^9.6.1",
+    "@typescript-eslint/eslint-plugin": "^8.18.1",
+    "@typescript-eslint/parser": "^8.18.1",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "prettier": "^3.4.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@types/redis": "^4.0.10",
+    "redis": "^5.6.1"
+  }
+}
