@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const MONGO_URL = process.env.MONGODB_URI || "mongodb://localhost:27017/weather-app";
 
-export async function connectDatabase(): Promise<void> {
+export const connectDatabase = async (): Promise<void> => {
     try {
         await mongoose.connect(MONGO_URL);
 
@@ -11,9 +11,9 @@ export async function connectDatabase(): Promise<void> {
         console.error("MongoDB connection failed:", error);
         throw error;
     }
-}
+};
 
-export async function disconnectDatabase(): Promise<void> {
+export const disconnectDatabase = async (): Promise<void> => {
     try {
         await mongoose.disconnect();
         console.log("Disconnected from MongoDB");
@@ -21,4 +21,4 @@ export async function disconnectDatabase(): Promise<void> {
         console.error("Error disconnecting from MongoDB:", error);
         throw error;
     }
-}
+};

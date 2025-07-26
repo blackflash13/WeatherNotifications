@@ -3,7 +3,7 @@ import { cacheService } from './routes/weather';
 
 const PORT = process.env.PORT || 3000;
 
-async function startServer() {
+const startServer = async () => {
   try {
     console.log('Starting Weather Fetcher service...');
 
@@ -38,7 +38,7 @@ async function startServer() {
     console.error('Failed to start Weather Fetcher service:', error);
     process.exit(1);
   }
-}
+};
 
 startServer();
 
