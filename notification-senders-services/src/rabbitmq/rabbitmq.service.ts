@@ -19,6 +19,8 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     private async connect() {
         try {
             const rabbitMQUrl = getRabbitMQUrl();
+
+            console.log("rabbitMQUrl", rabbitMQUrl);
             this.connection = await amqp.connect(rabbitMQUrl);
             this.channel = await this.connection.createChannel();
 
@@ -60,6 +62,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
             await this.channel.bindQueue(config.queueName, config.exchangeName, config.routingKey);
 
+            if (config.prefetch) {
+                await this.channel.prefetch(config.prefetch);
+            }
+
             this.logger.log(`Queue setup completed for ${config.queueName}`);
         } catch (error) {
             this.logger.error(`Failed to setup queue ${config.queueName}:`, error);
@@ -67,13 +73,16 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         }
     }
 
-    async consumeMessages(queueName: string, onMessage: (message: any) => Promise<void>): Promise<void> {
+    async consumeMessages(queueName: string, onMessage: (message: any) => Promise<void>, prefetch?: number): Promise<void> {
         try {
+            if (prefetch) {
+                await this.channel.prefetch(prefetch);
+            }
+
             await this.channel.consume(queueName, async (msg: any) => {
                 if (msg) {
                     try {
                         const content = JSON.parse(msg.content.toString());
-                        this.logger.log(`Received message from ${queueName}:`, content);
 
                         await onMessage(content);
 
