@@ -13,7 +13,7 @@ export interface NotificationMessage {
             timestamp: string;
         };
     };
-    timestamp: string;
+    timestamp: number;
     priority: "normal" | "high";
 }
 
