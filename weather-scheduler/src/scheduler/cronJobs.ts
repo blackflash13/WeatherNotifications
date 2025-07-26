@@ -19,8 +19,6 @@ export async function startScheduler(): Promise<void> {
         console.log("Running daily weather check...");
         await processWeatherForUsers("daily");
     });
-
-    console.log("Scheduler configured:");
 }
 
 async function processWeatherForUsers(frequency: "hourly" | "daily"): Promise<void> {
@@ -85,7 +83,7 @@ async function processWeatherForUsers(frequency: "hourly" | "daily"): Promise<vo
                                         timestamp: weatherData.timestamp,
                                     },
                                 },
-                                timestamp: new Date().toISOString(),
+                                timestamp: new Date().getTime(),
                                 priority: "normal",
                             };
 
