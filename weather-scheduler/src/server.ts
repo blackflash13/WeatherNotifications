@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3001;
 
 export const queueService = new QueueService();
 
-async function startServer() {
+const startServer = async () => {
     try {
         console.log("Starting Weather Scheduler service...");
 
@@ -34,6 +34,6 @@ async function startServer() {
         console.error("Failed to start Weather Scheduler service:", error);
         process.exit(1);
     }
-}
+};
 
 startServer();

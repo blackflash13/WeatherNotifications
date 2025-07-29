@@ -7,7 +7,7 @@ import { queueService } from "../server";
 const weatherService = new WeatherFetcherService();
 const userService = new UserService();
 
-export async function startScheduler(): Promise<void> {
+export const startScheduler = async (): Promise<void> => {
     console.log("Starting weather scheduler...");
 
     cron.schedule("0 * * * *", async () => {
@@ -19,9 +19,9 @@ export async function startScheduler(): Promise<void> {
         console.log("Running daily weather check...");
         await processWeatherForUsers("daily");
     });
-}
+};
 
-async function processWeatherForUsers(frequency: "hourly" | "daily"): Promise<void> {
+const processWeatherForUsers = async (frequency: "hourly" | "daily"): Promise<void> => {
     try {
         const isHealthy = await weatherService.checkHealthStatus();
         if (!isHealthy) {
@@ -103,4 +103,4 @@ async function processWeatherForUsers(frequency: "hourly" | "daily"): Promise<vo
     } catch (error) {
         console.error(`Error in processWeatherForUsers (${frequency}):`, error);
     }
-}
+};
