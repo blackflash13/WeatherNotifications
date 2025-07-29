@@ -2,14 +2,30 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
 import { QUEUE_CONFIGS } from "../config/rabbitmq.config";
 import { NotificationMessage } from "../types/notification.dto";
+import * as nodemailer from "nodemailer";
 
 @Injectable()
 export class EmailNotificationService implements OnModuleInit {
     private readonly logger = new Logger(EmailNotificationService.name);
     private readonly EMAIL_RATE_LIMIT_MS = parseInt(process.env.EMAIL_RATE_LIMIT_MS) || 300;
     private lastEmailTime = 0;
+    private transporter: nodemailer.Transporter;
 
-    constructor(private readonly rabbitMQService: RabbitMQService) {}
+    constructor(private readonly rabbitMQService: RabbitMQService) {
+        this.initializeEmailTransporter();
+    }
+
+    private initializeEmailTransporter() {
+        this.transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+        });
+
+        this.logger.log("Email transporter initialized 📧 ");
+    }
 
     async onModuleInit() {
         await this.setupEmailQueue();
@@ -45,7 +61,6 @@ export class EmailNotificationService implements OnModuleInit {
         const startTime = Date.now();
 
         try {
-            // Rate limiting: ensure minimum time between emails
             const now = Date.now();
             const timeSinceLastEmail = now - this.lastEmailTime;
 
@@ -54,16 +69,6 @@ export class EmailNotificationService implements OnModuleInit {
 
                 await this.timeout(waitTime);
             }
-
-            this.logger.log("📨 Processing email notification:", {
-                recipient: message.data.recipient,
-                city: message.data.city,
-                temperature: message.data.weather.temperature,
-                description: message.data.weather.description,
-                frequency: message.data.frequency,
-                priority: message.priority,
-                timestamp: new Date(message.timestamp).toISOString(),
-            });
 
             if (message.channel !== "email") {
                 this.logger.warn(`⚠️ Received non-email message in email queue: ${message.channel}`);
@@ -75,14 +80,12 @@ export class EmailNotificationService implements OnModuleInit {
                 return;
             }
 
-            // Send email
             await this.sendEmail(
                 message.data.recipient,
                 `Weather Update for ${message.data.city}`,
                 `Current weather in ${message.data.city}: ${message.data.weather.temperature}°C, ${message.data.weather.description}`
             );
 
-            // Update last email time
             this.lastEmailTime = Date.now();
 
             const processingTime = Date.now() - startTime;
@@ -99,12 +102,77 @@ export class EmailNotificationService implements OnModuleInit {
 
     async sendEmail(to: string, subject: string, content: string): Promise<void> {
         this.logger.log(`📧 Sending email to ${to} with subject: ${subject}`);
-        this.logger.log(`📧 Content: ${content}`);
 
-        // TODO: Implement actual email sending logic (e.g., using Nodemailer, SendGrid, etc.)
-        // For now, just simulate the email sending
-        await this.timeout(100); // Simulate email service response time
+        try {
+            const mailOptions = {
+                from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                to: to,
+                subject: subject,
+                text: content,
+                html: this.generateHtmlContent(content),
+            };
 
-        this.logger.log(`✅ Email sent successfully to ${to}`);
+            const result = await this.transporter.sendMail(mailOptions);
+
+            this.logger.log(`✅ Email sent successfully to ${to}`, {
+                messageId: result.messageId,
+                response: result.response,
+            });
+        } catch (error) {
+            this.logger.error(`❌ Failed to send email to ${to}:`, error);
+            throw new Error(`Failed to send email: ${error.message}`);
+        }
+    }
+
+    private generateHtmlContent(textContent: string): string {
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    .container {
+                        font-family: Arial, sans-serif;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background-color: #f9f9f9;
+                    }
+                    .header {
+                        background-color: #4CAF50;
+                        color: white;
+                        padding: 20px;
+                        text-align: center;
+                        border-radius: 5px 5px 0 0;
+                    }
+                    .content {
+                        background-color: white;
+                        padding: 20px;
+                        border-radius: 0 0 5px 5px;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    }
+                    .footer {
+                        text-align: center;
+                        padding: 10px;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h2>🌤️ Weather Notification</h2>
+                    </div>
+                    <div class="content">
+                        <p>${textContent.replace(/\n/g, "<br>")}</p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated weather notification service.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
     }
 }
