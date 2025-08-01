@@ -20,7 +20,6 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         try {
             const rabbitMQUrl = getRabbitMQUrl();
 
-            console.log("rabbitMQUrl", rabbitMQUrl);
             this.connection = await amqp.connect(rabbitMQUrl);
             this.channel = await this.connection.createChannel();
 

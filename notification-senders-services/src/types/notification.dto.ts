@@ -21,6 +21,9 @@ export class NotificationData {
     @IsString()
     city: string;
 
+    @IsString()
+    subscription_id: string;
+
     @IsIn(["hourly", "daily"])
     frequency: "hourly" | "daily";
 
