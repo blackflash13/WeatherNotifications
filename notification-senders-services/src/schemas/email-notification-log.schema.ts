@@ -6,7 +6,7 @@ export type EmailNotificationLogDocument = EmailNotificationLog & Document;
 
 @Schema({ timestamps: true, collection: "email_notification_logs" })
 export class EmailNotificationLog {
-    @Prop({ trim: true })
+    @Prop({ required: true, trim: true })
     subscription_id: string;
 
     @Prop({ required: true, enum: EmailStatusCode })

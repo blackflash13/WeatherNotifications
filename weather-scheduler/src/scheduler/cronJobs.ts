@@ -74,6 +74,7 @@ const processWeatherForUsers = async (frequency: "hourly" | "daily"): Promise<vo
                                 type: "weather_notification",
                                 channel,
                                 data: {
+                                    subscription_id: subscription._id,
                                     recipient,
                                     city: subscription.city,
                                     frequency: subscription.frequency,

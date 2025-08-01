@@ -2,6 +2,7 @@ import { Subscription } from "../models/User";
 import { UserNotificationPreference, NotificationChannel } from "../types/notification";
 
 export interface SubscriptionPreferences {
+    _id: string;
     email: string;
     city: string;
     frequency: "hourly" | "daily";
@@ -29,6 +30,7 @@ export class UserService {
         ).lean();
 
         return subscriptions.map(subscription => ({
+            _id: subscription._id.toString(),
             email: subscription.email,
             city: subscription.city,
             frequency: subscription.frequency,

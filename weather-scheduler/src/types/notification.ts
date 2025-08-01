@@ -4,6 +4,7 @@ export interface NotificationMessage {
     type: "weather_notification";
     channel: NotificationChannel;
     data: {
+        subscription_id: string;
         recipient: string;
         city: string;
         frequency: "hourly" | "daily";
