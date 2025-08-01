@@ -1,17 +1,22 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import * as nodemailer from "nodemailer";
 import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
 import { QUEUE_CONFIGS } from "../config/rabbitmq.config";
 import { NotificationMessage } from "../types/notification.dto";
-import * as nodemailer from "nodemailer";
+import { EmailLogService } from "../services/email-log.service";
+import { EmailStatusCode } from "../types/email-status.enum";
 
 @Injectable()
 export class EmailNotificationService implements OnModuleInit {
     private readonly logger = new Logger(EmailNotificationService.name);
-    private readonly EMAIL_RATE_LIMIT_MS = parseInt(process.env.EMAIL_RATE_LIMIT_MS) || 300;
+    private readonly EMAIL_RATE_LIMIT_MS = parseInt(process.env.EMAIL_RATE_LIMIT_MS) || 500;
     private lastEmailTime = 0;
     private transporter: nodemailer.Transporter;
 
-    constructor(private readonly rabbitMQService: RabbitMQService) {
+    constructor(
+        private readonly rabbitMQService: RabbitMQService,
+        private readonly emailLogService: EmailLogService
+    ) {
         this.initializeEmailTransporter();
     }
 
@@ -83,7 +88,8 @@ export class EmailNotificationService implements OnModuleInit {
             await this.sendEmail(
                 message.data.recipient,
                 `Weather Update for ${message.data.city}`,
-                `Current weather in ${message.data.city}: ${message.data.weather.temperature}°C, ${message.data.weather.description}`
+                `Current weather in ${message.data.city}: ${message.data.weather.temperature}°C, ${message.data.weather.description}`,
+                message.data.subscription_id
             );
 
             this.lastEmailTime = Date.now();
@@ -100,27 +106,57 @@ export class EmailNotificationService implements OnModuleInit {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    async sendEmail(to: string, subject: string, content: string): Promise<void> {
+    async sendEmail(to: string, subject: string, content: string, subscriptionId: string): Promise<void> {
         this.logger.log(`📧 Sending email to ${to} with subject: ${subject}`);
+
+        let statusCode = EmailStatusCode.DELIVERED;
+        let errorMessage: string | undefined;
+        let messageId: string | undefined;
+        let response: string | undefined;
 
         try {
             const mailOptions = {
-                from: process.env.SMTP_FROM || process.env.SMTP_USER,
-                to: to,
+                from: {
+                    name: "Weather Notification",
+                    address: process.env.SMTP_USER,
+                },
+                to,
                 subject: subject,
                 text: content,
                 html: this.generateHtmlContent(content),
             };
 
             const result = await this.transporter.sendMail(mailOptions);
+            messageId = result.messageId;
+            response = result.response;
 
             this.logger.log(`✅ Email sent successfully to ${to}`, {
                 messageId: result.messageId,
                 response: result.response,
             });
         } catch (error) {
+            statusCode = EmailStatusCode.FAILED;
+            errorMessage = error.message;
             this.logger.error(`❌ Failed to send email to ${to}:`, error);
-            throw new Error(`Failed to send email: ${error.message}`);
+        } finally {
+            try {
+                await this.emailLogService.saveEmailLog({
+                    subscription_id: subscriptionId,
+                    status_code: statusCode,
+                    recipient: to,
+                    subject: subject,
+                    error_message: errorMessage,
+                    message_id: messageId,
+                    response: response,
+                });
+            } catch (logError) {
+                this.logger.error("❌ Failed to save email log:", logError);
+                // Don't throw here to avoid failing the email sending process
+            }
+        }
+
+        if (statusCode !== EmailStatusCode.DELIVERED) {
+            throw new Error(`Failed to send email: ${errorMessage}`);
         }
     }
 
