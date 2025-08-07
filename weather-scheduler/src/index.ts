@@ -17,7 +17,7 @@ const corsOptions = {
 
 app.use(helmet());
 app.use(cors(corsOptions));
-app.use(morgan("combined"));
+app.use(morgan("tiny"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -28,7 +28,5 @@ app.get("/health", (_, res) => {
         timestamp: new Date().toISOString(),
     });
 });
-
-console.log("Weather Scheduler service configured ✅");
 
 export default app;

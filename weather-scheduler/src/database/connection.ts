@@ -1,9 +1,11 @@
 import mongoose from "mongoose";
-
-const MONGO_URL = process.env.MONGODB_URI || "mongodb://localhost:27017/weather-app";
+import { getConfig } from "../config/app.config";
 
 export const connectDatabase = async (): Promise<void> => {
     try {
+        const config = getConfig();
+        const MONGO_URL = config.mongo_url;
+
         await mongoose.connect(MONGO_URL);
 
         console.log("Connected to MongoDB ✅");

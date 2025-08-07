@@ -2,40 +2,46 @@ import amqp from "amqplib";
 import { randomUUID } from "crypto";
 
 import { NotificationMessage, ChannelQueueConfig } from "../types/notification";
-
-const RABBIT_URL = process.env.RABBITMQ_URL || "amqp://localhost:5672";
+import { getConfig } from "../config/app.config";
 
 export class QueueService {
     private connection: any = null;
     private channel: any = null;
     private channelConfigs: ChannelQueueConfig;
     private isConnected = false;
+    private rabbitUrl: string;
+    private prefetch: number;
 
     constructor() {
-        // TODO refactor this to use a more robust configuration system
+        const config = getConfig();
+        this.rabbitUrl = config.rabbitConfig.url;
+        this.prefetch = config.rabbitConfig.prefetch || 10;
+
         this.channelConfigs = {
             email: {
-                exchangeName: process.env.RABBITMQ_EXCHANGE || "weather_notifications",
-                queueName: process.env.RABBITMQ_EMAIL_QUEUE || "email_notifications",
-                routingKey: process.env.RABBITMQ_EMAIL_ROUTING_KEY || "weather.email",
+                exchangeName: config.rabbitConfig.exchange,
+                queueName: config.rabbitConfig.emailQueue,
+                routingKey: config.rabbitConfig.emailRoutingKey,
             },
             telegram: {
-                exchangeName: process.env.RABBITMQ_EXCHANGE || "weather_notifications",
-                queueName: process.env.RABBITMQ_TELEGRAM_QUEUE || "telegram_notifications",
-                routingKey: process.env.RABBITMQ_TELEGRAM_ROUTING_KEY || "weather.telegram",
+                exchangeName: config.rabbitConfig.exchange,
+                queueName: config.rabbitConfig.telegramQueue,
+                routingKey: config.rabbitConfig.telegramRoutingKey,
             },
             whatsapp: {
-                exchangeName: process.env.RABBITMQ_EXCHANGE || "weather_notifications",
-                queueName: process.env.RABBITMQ_WHATSAPP_QUEUE || "whatsapp_notifications",
-                routingKey: process.env.RABBITMQ_WHATSAPP_ROUTING_KEY || "weather.whatsapp",
+                exchangeName: config.rabbitConfig.exchange,
+                queueName: config.rabbitConfig.whatsappQueue,
+                routingKey: config.rabbitConfig.whatsappRoutingKey,
             },
         };
     }
 
     async connect(): Promise<void> {
         try {
-            this.connection = await amqp.connect(RABBIT_URL);
+            this.connection = await amqp.connect(this.rabbitUrl);
             this.channel = await this.connection.createChannel();
+
+            await this.channel.prefetch(this.prefetch);
 
             for (const config of Object.values(this.channelConfigs)) {
                 await this.channel.assertExchange(config.exchangeName, "direct", {
