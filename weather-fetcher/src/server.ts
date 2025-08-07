@@ -11,8 +11,6 @@ const startServer = async () => {
 
     const server = app.listen(PORT, () => {
       console.log(`🚀 Weather Fetcher service is running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`🔗 Environment: ${process.env.NODE_ENV || 'development'}`);
     });
 
     process.on('SIGTERM', () => {

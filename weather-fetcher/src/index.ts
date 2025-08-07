@@ -19,7 +19,7 @@ const corsOptions = {
 
 app.use(helmet());
 app.use(cors(corsOptions));
-app.use(morgan("combined"));
+app.use(morgan("tiny"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -27,7 +27,5 @@ app.use("/", routes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
-
-console.log("Weather Fetcher service with error handling configured ✅");
 
 export default app;

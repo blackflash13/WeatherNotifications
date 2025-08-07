@@ -1,3 +1,5 @@
+const config = require("config");
+
 export interface QueueConfig {
     exchangeName: string;
     queueName: string;
@@ -9,27 +11,41 @@ export interface ChannelQueueConfig {
     [key: string]: QueueConfig;
 }
 
-export const QUEUE_CONFIGS: ChannelQueueConfig = {
-    email: {
-        exchangeName: "notifications",
-        queueName: "email_notifications",
-        routingKey: "notification.email",
-        prefetch: 100,
-    },
-    telegram: {
-        exchangeName: "notifications",
-        queueName: "telegram_notifications",
-        routingKey: "notification.telegram",
-        prefetch: 50,
-    },
-    whatsapp: {
-        exchangeName: "notifications",
-        queueName: "whatsapp_notifications",
-        routingKey: "notification.whatsapp",
-        prefetch: 30,
-    },
+const getQueueConfigs = (): ChannelQueueConfig => {
+    const notificationType = process.env.NOTIFICATION_TYPE;
+
+    if (!["hourly", "daily"].includes(notificationType)) {
+        throw new Error(`Invalid NOTIFICATION_TYPE: ${notificationType}. Must be 'hourly' or 'daily'`);
+    }
+
+    const baseExchange = config.get("rabbitmq.exchange");
+    const notificationConfig = config.get(`notifications.${notificationType}`) as any;
+    const exchange = process.env.RABBITMQ_EXCHANGE || baseExchange;
+
+    return {
+        email: {
+            exchangeName: exchange,
+            queueName: notificationConfig.email.queueName,
+            routingKey: notificationConfig.email.routingKey,
+            prefetch: notificationConfig.email.prefetch,
+        },
+        telegram: {
+            exchangeName: exchange,
+            queueName: notificationConfig.telegram.queueName,
+            routingKey: notificationConfig.telegram.routingKey,
+            prefetch: notificationConfig.telegram.prefetch,
+        },
+        whatsapp: {
+            exchangeName: exchange,
+            queueName: notificationConfig.whatsapp.queueName,
+            routingKey: notificationConfig.whatsapp.routingKey,
+            prefetch: notificationConfig.whatsapp.prefetch,
+        },
+    };
 };
 
+export const QUEUE_CONFIGS: ChannelQueueConfig = getQueueConfigs();
+
 export const getRabbitMQUrl = (): string => {
-    return process.env.RABBITMQ_URL || "amqp://localhost:5672";
+    return config.get("rabbitmq.url");
 };

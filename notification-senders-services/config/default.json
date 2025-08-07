@@ -1,0 +1,46 @@
+{
+    "app": {
+        "name": "notification-senders-service",
+        "port": 3002
+    },
+    "rabbitmq": {
+        "url": "amqp://user:password@localhost:5672",
+        "exchange": "weather_notifications"
+    },
+    "notifications": {
+        "daily": {
+            "email": {
+                "queueName": "email_notifications_daily",
+                "routingKey": "weather.email.daily",
+                "prefetch": 5
+            },
+            "telegram": {
+                "queueName": "telegram_notifications_daily",
+                "routingKey": "weather.telegram.daily",
+                "prefetch": 25
+            },
+            "whatsapp": {
+                "queueName": "whatsapp_notifications_daily",
+                "routingKey": "weather.whatsapp.daily",
+                "prefetch": 15
+            }
+        },
+        "hourly": {
+            "email": {
+                "queueName": "email_notifications_hourly",
+                "routingKey": "weather.email.hourly",
+                "prefetch": 10
+            },
+            "telegram": {
+                "queueName": "telegram_notifications_hourly",
+                "routingKey": "weather.telegram.hourly",
+                "prefetch": 50
+            },
+            "whatsapp": {
+                "queueName": "whatsapp_notifications_hourly",
+                "routingKey": "weather.whatsapp.hourly",
+                "prefetch": 30
+            }
+        }
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "app": {
+        "name": "weather-scheduler",
+        "port": 3001
+    },
+    "database": {
+        "mongodb_uri": "mongodb://localhost:27017/weather-app"
+    },
+    "rabbitmq": {
+        "url": "amqp://user:password@localhost:5672",
+        "exchange": "weather_notifications"
+    },
+    "notifications": {
+        "daily": {
+            "cronTime": "0 8 * * *",
+            "rabbitmq": {
+                "prefetch": 1,
+                "queues": {
+                    "email": "email_notifications_daily",
+                    "telegram": "telegram_notifications_daily",
+                    "whatsapp": "whatsapp_notifications_daily"
+                },
+                "routingKeys": {
+                    "email": "weather.email.daily",
+                    "telegram": "weather.telegram.daily",
+                    "whatsapp": "weather.whatsapp.daily"
+                }
+            }
+        },
+        "hourly": {
+            "cronTime": "* * * * *",
+            "rabbitmq": {
+                "prefetch": 10,
+                "queues": {
+                    "email": "email_notifications_hourly",
+                    "telegram": "telegram_notifications_hourly",
+                    "whatsapp": "whatsapp_notifications_hourly"
+                },
+                "routingKeys": {
+                    "email": "weather.email.hourly",
+                    "telegram": "weather.telegram.hourly",
+                    "whatsapp": "weather.whatsapp.hourly"
+                }
+            }
+        }
+    }
+}

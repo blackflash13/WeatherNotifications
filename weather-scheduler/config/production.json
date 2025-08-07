@@ -1,0 +1,20 @@
+{
+    "database": {
+        "mongodb_uri": "mongodb://production-host:27017/weather-app-prod"
+    },
+    "rabbitmq": {
+        "url": "amqp://production-rabbitmq:5672"
+    },
+    "notifications": {
+        "daily": {
+            "rabbitmq": {
+                "prefetch": 5
+            }
+        },
+        "hourly": {
+            "rabbitmq": {
+                "prefetch": 20
+            }
+        }
+    }
+}
