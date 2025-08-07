@@ -1,0 +1,29 @@
+{
+    "rabbitmq": {
+        "url": "amqp://production-rabbitmq:5672"
+    },
+    "notifications": {
+        "daily": {
+            "email": {
+                "prefetch": 3
+            },
+            "telegram": {
+                "prefetch": 15
+            },
+            "whatsapp": {
+                "prefetch": 10
+            }
+        },
+        "hourly": {
+            "email": {
+                "prefetch": 15
+            },
+            "telegram": {
+                "prefetch": 75
+            },
+            "whatsapp": {
+                "prefetch": 45
+            }
+        }
+    }
+}

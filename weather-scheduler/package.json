@@ -27,6 +27,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/amqplib": "^0.10.5",
+    "@types/config": "^3.3.5",
     "@types/cors": "^2.8.19",
     "@types/eslint": "^9.6.1",
     "@types/express": "^5.0.3",
@@ -46,6 +47,7 @@
   "dependencies": {
     "amqplib": "^0.10.4",
     "axios": "^1.10.0",
+    "config": "^4.1.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",

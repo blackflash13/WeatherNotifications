@@ -55,7 +55,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
     async setupQueue(config: QueueConfig): Promise<void> {
         try {
-            await this.channel.assertExchange(config.exchangeName, "topic", { durable: true });
+            await this.channel.assertExchange(config.exchangeName, "direct", { durable: true });
 
             await this.channel.assertQueue(config.queueName, { durable: true });
 

@@ -1,3 +1,5 @@
+const config = require("config");
+
 export interface RabbitMQConfig {
     url: string;
     prefetch?: number;
@@ -21,47 +23,37 @@ export interface Configurations {
     daily: AppConfig;
 }
 
-const configs: Configurations = {
-    hourly: {
-        cronTime: "0 * * * *",
-        mongo_url: process.env.MONGODB_URI || "mongodb://localhost:27017/weather-app",
-        rabbitConfig: {
-            url: process.env.RABBITMQ_URL || "amqp://localhost:5672",
-            prefetch: 10,
-            exchange: process.env.RABBITMQ_EXCHANGE || "weather_notifications",
-            emailQueue: process.env.RABBITMQ_EMAIL_QUEUE || "email_notifications",
-            telegramQueue: process.env.RABBITMQ_TELEGRAM_QUEUE || "telegram_notifications",
-            whatsappQueue: process.env.RABBITMQ_WHATSAPP_QUEUE || "whatsapp_notifications",
-            emailRoutingKey: process.env.RABBITMQ_EMAIL_ROUTING_KEY || "weather.email",
-            telegramRoutingKey: process.env.RABBITMQ_TELEGRAM_ROUTING_KEY || "weather.telegram",
-            whatsappRoutingKey: process.env.RABBITMQ_WHATSAPP_ROUTING_KEY || "weather.whatsapp",
-        },
-    },
-    daily: {
-        cronTime: "0 9 * * *",
-        mongo_url: process.env.MONGODB_URI || "mongodb://localhost:27017/weather-app",
-        rabbitConfig: {
-            url: process.env.RABBITMQ_URL || "amqp://localhost:5672",
-            prefetch: 1,
-            exchange: process.env.RABBITMQ_EXCHANGE || "weather_notifications",
-            emailQueue: process.env.RABBITMQ_EMAIL_QUEUE || "email_notifications",
-            telegramQueue: process.env.RABBITMQ_TELEGRAM_QUEUE || "telegram_notifications",
-            whatsappQueue: process.env.RABBITMQ_WHATSAPP_QUEUE || "whatsapp_notifications",
-            emailRoutingKey: process.env.RABBITMQ_EMAIL_ROUTING_KEY || "weather.email",
-            telegramRoutingKey: process.env.RABBITMQ_TELEGRAM_ROUTING_KEY || "weather.telegram",
-            whatsappRoutingKey: process.env.RABBITMQ_WHATSAPP_ROUTING_KEY || "weather.whatsapp",
-        },
-    },
-};
-
 export const getConfig = (): AppConfig => {
-    const notificationType = process.env.NOTIFICATION_TYPE as keyof Configurations;
+    const notificationType = process.env.NOTIFICATION_TYPE as "hourly" | "daily";
 
-    if (!notificationType || !configs[notificationType]) {
-        throw new Error(`Invalid NOTIFICATION_TYPE: ${notificationType}. Must be 'hourly' or 'daily'`);
+    if (!notificationType || !["hourly", "daily"].includes(notificationType)) {
+        throw new Error(`Invalid NOTIFICATION_TYPE: ${notificationType}.`);
     }
 
-    return configs[notificationType];
+    const mongo_url = config.get("database.mongodb_uri");
+    const rabbitUrl = config.get("rabbitmq.url");
+    const exchange = config.get("rabbitmq.exchange");
+    const notificationConfig = config.get(`notifications.${notificationType}`);
+    const {
+        cronTime,
+        rabbitmq: { prefetch, queues, routingKeys },
+    } = notificationConfig;
+
+    return {
+        cronTime,
+        mongo_url,
+        rabbitConfig: {
+            url: rabbitUrl,
+            prefetch,
+            exchange,
+            emailQueue: queues.email,
+            telegramQueue: queues.telegram,
+            whatsappQueue: queues.whatsapp,
+            emailRoutingKey: routingKeys.email,
+            telegramRoutingKey: routingKeys.telegram,
+            whatsappRoutingKey: routingKeys.whatsapp,
+        },
+    };
 };
 
-export default configs;
+export default config;
