@@ -6,6 +6,7 @@ export interface SMTPConfig {
     port?: number;
     secure?: boolean;
     senderName?: string;
+    rateLimitMs?: number;
     auth: {
         user: string;
         pass: string;
@@ -28,12 +29,4 @@ export const getSMTPConfig = (): SMTPConfig => {
     }
 
     return resolvedConfig;
-};
-
-export const getSMTPFromAddress = (): { name: string; address: string } => {
-    const smtpConfig = getSMTPConfig();
-    return {
-        name: smtpConfig.senderName || "Weather Notification",
-        address: smtpConfig.auth.user,
-    };
 };

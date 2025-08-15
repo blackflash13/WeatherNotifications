@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import * as nodemailer from "nodemailer";
 import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
 import { QUEUE_CONFIGS } from "../config/rabbitmq.config";
-import { getSMTPConfig, getSMTPFromAddress } from "../config/smtp.config";
+import { getSMTPConfig, SMTPConfig } from "../config/smtp.config";
 import { NotificationMessage } from "../types/notification.dto";
 import { EmailLogService } from "../services/email-log.service";
 import { EmailStatusCode } from "../types/email-status.enum";
@@ -10,7 +10,7 @@ import { EmailStatusCode } from "../types/email-status.enum";
 @Injectable()
 export class EmailNotificationService implements OnModuleInit {
     private readonly logger = new Logger(EmailNotificationService.name);
-    private readonly EMAIL_RATE_LIMIT_MS = parseInt(process.env.EMAIL_RATE_LIMIT_MS) || 500;
+    private readonly smtpConfig: SMTPConfig;
     private lastEmailTime = 0;
     private transporter: nodemailer.Transporter;
 
@@ -18,20 +18,19 @@ export class EmailNotificationService implements OnModuleInit {
         private readonly rabbitMQService: RabbitMQService,
         private readonly emailLogService: EmailLogService
     ) {
+        this.smtpConfig = getSMTPConfig();
         this.initializeEmailTransporter();
     }
 
     private initializeEmailTransporter() {
-        const smtpConfig = getSMTPConfig();
-
         this.transporter = nodemailer.createTransport({
-            service: smtpConfig.service,
-            host: smtpConfig.host,
-            port: smtpConfig.port,
-            secure: smtpConfig.secure,
+            service: this.smtpConfig.service,
+            host: this.smtpConfig.host,
+            port: this.smtpConfig.port,
+            secure: this.smtpConfig.secure,
             auth: {
-                user: smtpConfig.auth.user,
-                pass: smtpConfig.auth.pass,
+                user: this.smtpConfig.auth.user,
+                pass: this.smtpConfig.auth.pass,
             },
         });
 
@@ -74,9 +73,10 @@ export class EmailNotificationService implements OnModuleInit {
         try {
             const now = Date.now();
             const timeSinceLastEmail = now - this.lastEmailTime;
+            const rateLimitMs = this.smtpConfig.rateLimitMs || 500;
 
-            if (timeSinceLastEmail < this.EMAIL_RATE_LIMIT_MS) {
-                const waitTime = this.EMAIL_RATE_LIMIT_MS - timeSinceLastEmail;
+            if (timeSinceLastEmail < rateLimitMs) {
+                const waitTime = rateLimitMs - timeSinceLastEmail;
 
                 await this.timeout(waitTime);
             }
@@ -124,9 +124,11 @@ export class EmailNotificationService implements OnModuleInit {
         let response: string | undefined;
 
         try {
-            const fromAddress = getSMTPFromAddress();
             const mailOptions = {
-                from: fromAddress,
+                from: {
+                    name: this.smtpConfig.senderName || "Weather Notification",
+                    address: this.smtpConfig.auth.user,
+                },
                 to,
                 subject: subject,
                 text: content,
