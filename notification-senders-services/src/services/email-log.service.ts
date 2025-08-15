@@ -18,10 +18,7 @@ export interface EmailLogData {
 export class EmailLogService {
     private readonly logger = new Logger(EmailLogService.name);
 
-    constructor(
-        @InjectModel(EmailNotificationLog.name)
-        private emailLogModel: Model<EmailNotificationLogDocument>
-    ) {}
+    constructor(@InjectModel(EmailNotificationLog.name) private emailLogModel: Model<EmailNotificationLogDocument>) {}
 
     async saveEmailLog(logData: EmailLogData): Promise<void> {
         try {

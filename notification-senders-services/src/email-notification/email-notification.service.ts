@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import * as nodemailer from "nodemailer";
 import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
 import { QUEUE_CONFIGS } from "../config/rabbitmq.config";
+import { getSMTPConfig, getSMTPFromAddress } from "../config/smtp.config";
 import { NotificationMessage } from "../types/notification.dto";
 import { EmailLogService } from "../services/email-log.service";
 import { EmailStatusCode } from "../types/email-status.enum";
@@ -21,11 +22,16 @@ export class EmailNotificationService implements OnModuleInit {
     }
 
     private initializeEmailTransporter() {
+        const smtpConfig = getSMTPConfig();
+
         this.transporter = nodemailer.createTransport({
-            service: "gmail",
+            service: smtpConfig.service,
+            host: smtpConfig.host,
+            port: smtpConfig.port,
+            secure: smtpConfig.secure,
             auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
+                user: smtpConfig.auth.user,
+                pass: smtpConfig.auth.pass,
             },
         });
 
@@ -84,13 +90,16 @@ export class EmailNotificationService implements OnModuleInit {
                 this.logger.warn(`⚠️ Unknown message type: ${message.type}`);
                 return;
             }
+            console.group("Message sended");
+            console.log("Message sended", message);
+            console.groupEnd();
 
-            await this.sendEmail(
-                message.data.recipient,
-                `Weather Update for ${message.data.city}`,
-                `Current weather in ${message.data.city}: ${message.data.weather.temperature}°C, ${message.data.weather.description}`,
-                message.data.subscription_id
-            );
+            // await this.sendEmail(
+            //     message.data.recipient,
+            //     `Weather Update for ${message.data.city}`,
+            //     `Current weather in ${message.data.city}: ${message.data.weather.temperature}°C, ${message.data.weather.description}`,
+            //     message.data.subscription_id
+            // );
 
             this.lastEmailTime = Date.now();
 
@@ -115,11 +124,9 @@ export class EmailNotificationService implements OnModuleInit {
         let response: string | undefined;
 
         try {
+            const fromAddress = getSMTPFromAddress();
             const mailOptions = {
-                from: {
-                    name: "Weather Notification",
-                    address: process.env.SMTP_USER,
-                },
+                from: fromAddress,
                 to,
                 subject: subject,
                 text: content,
@@ -139,20 +146,15 @@ export class EmailNotificationService implements OnModuleInit {
             errorMessage = error.message;
             this.logger.error(`❌ Failed to send email to ${to}:`, error);
         } finally {
-            try {
-                await this.emailLogService.saveEmailLog({
-                    subscription_id: subscriptionId,
-                    status_code: statusCode,
-                    recipient: to,
-                    subject: subject,
-                    error_message: errorMessage,
-                    message_id: messageId,
-                    response: response,
-                });
-            } catch (logError) {
-                this.logger.error("❌ Failed to save email log:", logError);
-                // Don't throw here to avoid failing the email sending process
-            }
+            await this.emailLogService.saveEmailLog({
+                subscription_id: subscriptionId,
+                status_code: statusCode,
+                recipient: to,
+                subject: subject,
+                error_message: errorMessage,
+                message_id: messageId,
+                response: response,
+            });
         }
 
         if (statusCode !== EmailStatusCode.DELIVERED) {
