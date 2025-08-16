@@ -1,6 +1,6 @@
 {
     "rabbitmq": {
-        "url": "amqp://production-rabbitmq:5672"
+        "url": "amqp://user:password@rabbitmq:5672"
     },
     "smtp": {
         "service": "gmail",

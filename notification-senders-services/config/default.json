@@ -4,7 +4,7 @@
         "port": 3002
     },
     "rabbitmq": {
-        "url": "amqp://user:password@localhost:5672",
+        "url": "amqp://user:password@rabbitmq:5672",
         "exchange": "weather_notifications"
     },
     "smtp": {
