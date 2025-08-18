@@ -1,6 +1,6 @@
 {
     "database": {
-        "mongodb_uri": "mongodb://admin:password@mongodb:27017/weather-app"
+        "mongodb_uri": "mongodb://admin:password@mongodb:27017/weather-app?authSource=admin"
     },
     "rabbitmq": {
         "url": "amqp://user:password@rabbitmq:5672"

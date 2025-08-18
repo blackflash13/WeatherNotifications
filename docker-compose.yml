@@ -65,12 +65,12 @@ services:
             - PORT=3000
             - REDIS_URL=redis://redis:6379
             - CACHE_TTL_SECONDS=1800
+            - WEATHER_API_URL=https://api.openweathermap.org/data/2.5
+            - WEATHER_API_KEY=35fbae33ad0d68f202a88b7d793f88c0
         depends_on:
             redis:
                 condition: service_healthy
-        volumes:
-            - ./weather-fetcher:/app
-            - /app/node_modules
+
         networks:
             - weather-network
         restart: unless-stopped
@@ -96,9 +96,7 @@ services:
                 condition: service_healthy
             weather-fetcher:
                 condition: service_started
-        volumes:
-            - ./weather-scheduler:/app
-            - /app/node_modules
+
         networks:
             - weather-network
         restart: unless-stopped
@@ -124,9 +122,7 @@ services:
                 condition: service_healthy
             weather-fetcher:
                 condition: service_started
-        volumes:
-            - ./weather-scheduler:/app
-            - /app/node_modules
+
         networks:
             - weather-network
         restart: unless-stopped
@@ -150,9 +146,7 @@ services:
                 condition: service_healthy
             rabbitmq:
                 condition: service_healthy
-        volumes:
-            - ./notification-senders-services:/app
-            - /app/node_modules
+
         networks:
             - weather-network
         restart: unless-stopped
@@ -169,14 +163,14 @@ services:
             - PORT=3002
             - NOTIFICATION_TYPE=daily
             - MONGODB_URI=mongodb://admin:password@mongodb:27017/weather-app?authSource=admin
+            - RABBITMQ_URL=amqp://user:password@rabbitmq:5672
+            - RABBITMQ_EXCHANGE=weather_notifications
         depends_on:
             mongodb:
                 condition: service_healthy
             rabbitmq:
                 condition: service_healthy
-        volumes:
-            - ./notification-senders-services:/app
-            - /app/node_modules
+
         networks:
             - weather-network
         restart: unless-stopped

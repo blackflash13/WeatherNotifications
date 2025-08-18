@@ -4,8 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci
-
+RUN npm install
 
 COPY . .
 
@@ -25,7 +24,7 @@ RUN addgroup -g 1001 -S nodejs && \
 
 COPY package*.json ./
 
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --production && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 

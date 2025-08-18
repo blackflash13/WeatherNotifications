@@ -35,18 +35,23 @@ This will:
 
 ### 3. Configure environment
 
-Edit the generated `.env` file with your settings:
+Edit the `docker-compose.yml` file with your private API credentials:
 
-```bash
-# Email configuration
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-FROM_EMAIL=your-email@gmail.com
+**⚠️ REQUIRED: Weather API Configuration**
 
-# Weather API (if needed)
-WEATHER_API_KEY=your-api-key
+You MUST add the following environment variables to the `weather-fetcher` service in `docker-compose.yml`:
+
+```yaml
+weather-fetcher:
+    # ... existing configuration ...
+    environment:
+        - NODE_ENV=production
+        - PORT=3000
+        - REDIS_URL=redis://redis:6379
+        - CACHE_TTL_SECONDS=1800
+        # ADD THESE REQUIRED VARIABLES:
+        - WEATHER_API_URL=https://your-weather-api.com/endpoint
+        - WEATHER_API_KEY=your-private-api-key-here
 ```
 
 ## 📚 Commands Reference

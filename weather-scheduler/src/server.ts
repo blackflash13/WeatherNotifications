@@ -13,7 +13,6 @@ const startServer = async () => {
 
         await connectDatabase();
         await queueService.connect();
-
         await startScheduler();
 
         const server = app.listen(PORT, () => {
