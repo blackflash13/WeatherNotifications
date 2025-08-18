@@ -4,10 +4,10 @@
         "port": 3001
     },
     "database": {
-        "mongodb_uri": "mongodb://localhost:27017/weather-app"
+        "mongodb_uri": "mongodb://admin:password@mongodb:27017/"
     },
     "rabbitmq": {
-        "url": "amqp://user:password@localhost:5672",
+        "url": "amqp://user:password@rabbitmq:5672",
         "exchange": "weather_notifications"
     },
     "notifications": {
@@ -28,7 +28,7 @@
             }
         },
         "hourly": {
-            "cronTime": "* * * * *",
+            "cronTime": "*/10 * * * *",
             "rabbitmq": {
                 "prefetch": 10,
                 "queues": {

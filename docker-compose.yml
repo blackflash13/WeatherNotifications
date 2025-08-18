@@ -1,0 +1,191 @@
+services:
+    redis:
+        image: redis:7-alpine
+        container_name: weather-redis
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - weather-network
+
+    mongodb:
+        image: mongo:7
+        container_name: weather-mongodb
+        ports:
+            - "27017:27017"
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: admin
+            MONGO_INITDB_ROOT_PASSWORD: password
+            MONGO_INITDB_DATABASE: weather-app
+        volumes:
+            - mongodb_data:/data/db
+        healthcheck:
+            test: echo 'db.runCommand("ping").ok' | mongosh mongodb://localhost:27017/weather-app --quiet
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - weather-network
+
+    rabbitmq:
+        image: rabbitmq:3-management-alpine
+        container_name: weather-rabbitmq
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        environment:
+            RABBITMQ_DEFAULT_USER: user
+            RABBITMQ_DEFAULT_PASS: password
+        volumes:
+            - rabbitmq_data:/var/lib/rabbitmq
+        healthcheck:
+            test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - weather-network
+
+
+    weather-fetcher:
+        build:
+            context: ./weather-fetcher
+            dockerfile: Dockerfile
+        container_name: weather-fetcher
+        ports:
+            - "3000:3000"
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - REDIS_URL=redis://redis:6379
+            - CACHE_TTL_SECONDS=1800
+        depends_on:
+            redis:
+                condition: service_healthy
+        volumes:
+            - ./weather-fetcher:/app
+            - /app/node_modules
+        networks:
+            - weather-network
+        restart: unless-stopped
+
+    weather-scheduler-hourly:
+        build:
+            context: ./weather-scheduler
+            dockerfile: Dockerfile
+        container_name: weather-scheduler-hourly
+        ports:
+            - "3001:3001"
+        environment:
+            - NODE_ENV=production
+            - PORT=3001
+            - NOTIFICATION_TYPE=hourly
+            - WEATHER_FETCHER_URL=http://weather-fetcher:3000
+            - MONGODB_URI=mongodb://admin:password@mongodb:27017/weather-app?authSource=admin
+            - RABBITMQ_URL=amqp://user:password@rabbitmq:5672
+        depends_on:
+            mongodb:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            weather-fetcher:
+                condition: service_started
+        volumes:
+            - ./weather-scheduler:/app
+            - /app/node_modules
+        networks:
+            - weather-network
+        restart: unless-stopped
+
+    weather-scheduler-daily:
+        build:
+            context: ./weather-scheduler
+            dockerfile: Dockerfile
+        container_name: weather-scheduler-daily
+        ports:
+            - "3011:3001"
+        environment:
+            - NODE_ENV=production
+            - PORT=3001
+            - NOTIFICATION_TYPE=daily
+            - WEATHER_FETCHER_URL=http://weather-fetcher:3000
+            - MONGODB_URI=mongodb://admin:password@mongodb:27017/weather-app?authSource=admin
+            - RABBITMQ_URL=amqp://user:password@rabbitmq:5672
+        depends_on:
+            mongodb:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            weather-fetcher:
+                condition: service_started
+        volumes:
+            - ./weather-scheduler:/app
+            - /app/node_modules
+        networks:
+            - weather-network
+        restart: unless-stopped
+
+    notification-sender-hourly:
+        build:
+            context: ./notification-senders-services
+            dockerfile: Dockerfile
+        container_name: notification-sender-hourly
+        ports:
+            - "3002:3002"
+        environment:
+            - NODE_ENV=production
+            - PORT=3002
+            - NOTIFICATION_TYPE=hourly
+            - MONGODB_URI=mongodb://admin:password@mongodb:27017/weather-app?authSource=admin
+            - RABBITMQ_URL=amqp://user:password@rabbitmq:5672
+            - RABBITMQ_EXCHANGE=weather_notifications
+        depends_on:
+            mongodb:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        volumes:
+            - ./notification-senders-services:/app
+            - /app/node_modules
+        networks:
+            - weather-network
+        restart: unless-stopped
+
+    notification-sender-daily:
+        build:
+            context: ./notification-senders-services
+            dockerfile: Dockerfile
+        container_name: notification-sender-daily
+        ports:
+            - "3012:3002"
+        environment:
+            - NODE_ENV=production
+            - PORT=3002
+            - NOTIFICATION_TYPE=daily
+            - MONGODB_URI=mongodb://admin:password@mongodb:27017/weather-app?authSource=admin
+        depends_on:
+            mongodb:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        volumes:
+            - ./notification-senders-services:/app
+            - /app/node_modules
+        networks:
+            - weather-network
+        restart: unless-stopped
+
+volumes:
+    redis_data:
+    mongodb_data:
+    rabbitmq_data:
+
+networks:
+    weather-network:
+        driver: bridge

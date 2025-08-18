@@ -1,9 +1,9 @@
 {
     "database": {
-        "mongodb_uri": "mongodb://production-host:27017/weather-app-prod"
+        "mongodb_uri": "mongodb://admin:password@mongodb:27017/weather-app"
     },
     "rabbitmq": {
-        "url": "amqp://production-rabbitmq:5672"
+        "url": "amqp://user:password@rabbitmq:5672"
     },
     "notifications": {
         "daily": {
