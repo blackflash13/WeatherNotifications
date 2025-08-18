@@ -2,6 +2,15 @@
     "rabbitmq": {
         "url": "amqp://production-rabbitmq:5672"
     },
+    "smtp": {
+        "service": "gmail",
+        "senderName": "Weather Notification",
+        "rateLimitMs": 300,
+        "auth": {
+            "user": "${SMTP_USER}",
+            "pass": "${SMTP_PASS}"
+        }
+    },
     "notifications": {
         "daily": {
             "email": {

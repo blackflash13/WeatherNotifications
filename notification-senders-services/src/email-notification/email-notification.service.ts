@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import * as nodemailer from "nodemailer";
 import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
 import { QUEUE_CONFIGS } from "../config/rabbitmq.config";
+import { getSMTPConfig, SMTPConfig } from "../config/smtp.config";
 import { NotificationMessage } from "../types/notification.dto";
 import { EmailLogService } from "../services/email-log.service";
 import { EmailStatusCode } from "../types/email-status.enum";
@@ -9,7 +10,7 @@ import { EmailStatusCode } from "../types/email-status.enum";
 @Injectable()
 export class EmailNotificationService implements OnModuleInit {
     private readonly logger = new Logger(EmailNotificationService.name);
-    private readonly EMAIL_RATE_LIMIT_MS = parseInt(process.env.EMAIL_RATE_LIMIT_MS) || 500;
+    private readonly smtpConfig: SMTPConfig;
     private lastEmailTime = 0;
     private transporter: nodemailer.Transporter;
 
@@ -17,15 +18,19 @@ export class EmailNotificationService implements OnModuleInit {
         private readonly rabbitMQService: RabbitMQService,
         private readonly emailLogService: EmailLogService
     ) {
+        this.smtpConfig = getSMTPConfig();
         this.initializeEmailTransporter();
     }
 
     private initializeEmailTransporter() {
         this.transporter = nodemailer.createTransport({
-            service: "gmail",
+            service: this.smtpConfig.service,
+            host: this.smtpConfig.host,
+            port: this.smtpConfig.port,
+            secure: this.smtpConfig.secure,
             auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
+                user: this.smtpConfig.auth.user,
+                pass: this.smtpConfig.auth.pass,
             },
         });
 
@@ -68,9 +73,10 @@ export class EmailNotificationService implements OnModuleInit {
         try {
             const now = Date.now();
             const timeSinceLastEmail = now - this.lastEmailTime;
+            const rateLimitMs = this.smtpConfig.rateLimitMs || 500;
 
-            if (timeSinceLastEmail < this.EMAIL_RATE_LIMIT_MS) {
-                const waitTime = this.EMAIL_RATE_LIMIT_MS - timeSinceLastEmail;
+            if (timeSinceLastEmail < rateLimitMs) {
+                const waitTime = rateLimitMs - timeSinceLastEmail;
 
                 await this.timeout(waitTime);
             }
@@ -84,13 +90,16 @@ export class EmailNotificationService implements OnModuleInit {
                 this.logger.warn(`⚠️ Unknown message type: ${message.type}`);
                 return;
             }
+            console.group("Message sended");
+            console.log("Message sended", message);
+            console.groupEnd();
 
-            await this.sendEmail(
-                message.data.recipient,
-                `Weather Update for ${message.data.city}`,
-                `Current weather in ${message.data.city}: ${message.data.weather.temperature}°C, ${message.data.weather.description}`,
-                message.data.subscription_id
-            );
+            // await this.sendEmail(
+            //     message.data.recipient,
+            //     `Weather Update for ${message.data.city}`,
+            //     `Current weather in ${message.data.city}: ${message.data.weather.temperature}°C, ${message.data.weather.description}`,
+            //     message.data.subscription_id
+            // );
 
             this.lastEmailTime = Date.now();
 
@@ -117,8 +126,8 @@ export class EmailNotificationService implements OnModuleInit {
         try {
             const mailOptions = {
                 from: {
-                    name: "Weather Notification",
-                    address: process.env.SMTP_USER,
+                    name: this.smtpConfig.senderName || "Weather Notification",
+                    address: this.smtpConfig.auth.user,
                 },
                 to,
                 subject: subject,
@@ -139,20 +148,15 @@ export class EmailNotificationService implements OnModuleInit {
             errorMessage = error.message;
             this.logger.error(`❌ Failed to send email to ${to}:`, error);
         } finally {
-            try {
-                await this.emailLogService.saveEmailLog({
-                    subscription_id: subscriptionId,
-                    status_code: statusCode,
-                    recipient: to,
-                    subject: subject,
-                    error_message: errorMessage,
-                    message_id: messageId,
-                    response: response,
-                });
-            } catch (logError) {
-                this.logger.error("❌ Failed to save email log:", logError);
-                // Don't throw here to avoid failing the email sending process
-            }
+            await this.emailLogService.saveEmailLog({
+                subscription_id: subscriptionId,
+                status_code: statusCode,
+                recipient: to,
+                subject: subject,
+                error_message: errorMessage,
+                message_id: messageId,
+                response: response,
+            });
         }
 
         if (statusCode !== EmailStatusCode.DELIVERED) {

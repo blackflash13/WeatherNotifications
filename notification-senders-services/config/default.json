@@ -7,6 +7,18 @@
         "url": "amqp://user:password@localhost:5672",
         "exchange": "weather_notifications"
     },
+    "smtp": {
+        "service": "gmail",
+        "host": "smtp.gmail.com",
+        "port": 587,
+        "secure": false,
+        "senderName": "Weather Notification",
+        "rateLimitMs": 500,
+        "auth": {
+            "user": "${SMTP_USER}",
+            "pass": "${SMTP_PASS}"
+        }
+    },
     "notifications": {
         "daily": {
             "email": {

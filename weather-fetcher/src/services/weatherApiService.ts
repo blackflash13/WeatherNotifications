@@ -47,7 +47,12 @@ export class WeatherApiService {
                 throw new Error("No API key or base URL provided");
             }
 
-            const response = await axios.get(`${baseUrl}/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`, {
+            const params = new URLSearchParams({
+                q: city,
+                appid: apiKey,
+                units: "metric",
+            });
+            const response = await axios.get(`${baseUrl}/weather?${params}`, {
                 timeout: 5000,
             });
 
