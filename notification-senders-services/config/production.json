@@ -1,0 +1,38 @@
+{
+    "rabbitmq": {
+        "url": "amqp://user:password@rabbitmq:5672"
+    },
+    "smtp": {
+        "service": "gmail",
+        "senderName": "Weather Notification",
+        "rateLimitMs": 300,
+        "auth": {
+            "user": "${SMTP_USER}",
+            "pass": "${SMTP_PASS}"
+        }
+    },
+    "notifications": {
+        "daily": {
+            "email": {
+                "prefetch": 3
+            },
+            "telegram": {
+                "prefetch": 15
+            },
+            "whatsapp": {
+                "prefetch": 10
+            }
+        },
+        "hourly": {
+            "email": {
+                "prefetch": 15
+            },
+            "telegram": {
+                "prefetch": 75
+            },
+            "whatsapp": {
+                "prefetch": 45
+            }
+        }
+    }
+}
