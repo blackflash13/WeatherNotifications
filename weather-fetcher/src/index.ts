@@ -15,7 +15,7 @@ const app = express();
 const corsOptions = {
     origin: process.env.NODE_ENV === "production" ? process.env.ALLOWED_ORIGINS?.split(",") || false : true,
     credentials: true,
-    methods: ["GET",],
+    methods: ["GET"],
     allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
 };
 

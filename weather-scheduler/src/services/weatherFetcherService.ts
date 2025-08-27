@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const WEATHER_FETCHER_URL = process.env.WEATHER_FETCHER_URL || "http://localhost:3000";
+const WEATHER_FETCHER_URL = process.env.WEATHER_FETCHER_URL;
+const SCHEDULER_API_KEY = process.env.SCHEDULER_API_KEY;
 
 export interface WeatherData {
     city: string;
@@ -24,6 +25,7 @@ export class WeatherFetcherService {
                 timeout: 5000,
                 headers: {
                     "Content-Type": "application/json",
+                    "X-API-Key": SCHEDULER_API_KEY,
                 },
             });
 
