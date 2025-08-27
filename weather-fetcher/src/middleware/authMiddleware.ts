@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { UNAUTH_ENDPOINTS, API_KEYS, AUTH_HEADERS } from "../constants/auth.constants";
+import { UNAUTH_ENDPOINTS, getApiKeys, AUTH_HEADERS } from "../constants/auth.constants";
 
 interface AuthenticatedRequest extends Request {
     service?: string;
@@ -21,6 +21,7 @@ export class AuthMiddleware {
             return;
         }
 
+        const API_KEYS = getApiKeys();
         const service = Object.entries(API_KEYS).find(([_, key]) => key === apiKey)?.[0];
 
         if (!service) {
